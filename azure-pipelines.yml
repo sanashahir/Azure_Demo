@@ -1,0 +1,38 @@
+trigger:
+  branches:
+    include:
+      - main  # Runs pipeline on commits to main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  JMETER_VERSION: '5.6.3'
+  JMETER_HOME: '$(Pipeline.Workspace)\\apache-jmeter-$(JMETER_VERSION)\\bin'
+  TEST_SCRIPT: 'Jpetstore_Demo.jmx'
+  RESULTS_FILE: 'results.jtl'
+  REPORT_DIR: 'html-report'
+
+steps:
+  - task: PowerShell@2
+    displayName: 'Download Apache JMeter'
+    inputs:
+      targetType: 'inline'
+      script: |
+        Invoke-WebRequest -Uri "https://downloads.apache.org/jmeter/binaries/apache-jmeter-$(JMETER_VERSION).zip" -OutFile jmeter.zip
+        Expand-Archive jmeter.zip -DestinationPath $(Pipeline.Workspace)
+
+  - task: PowerShell@2
+    displayName: 'Run JMeter Test Plan'
+    inputs:
+      targetType: 'inline'
+      script: |
+        cd "$(JMETER_HOME)"
+        .\jmeter.bat -n -t "$(Build.SourcesDirectory)\\$(TEST_SCRIPT)" -l "$(Build.SourcesDirectory)\\$(RESULTS_FILE)" -e -o "$(Build.SourcesDirectory)\\$(REPORT_DIR)"
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish JMeter Results'
+    inputs:
+      PathtoPublish: '$(Build.SourcesDirectory)\\$(REPORT_DIR)'
+      ArtifactName: 'JMeterReport'
+      publishLocation: 'Container'
