@@ -8,12 +8,20 @@ pool:
 
 variables:
   JMETER_VERSION: '5.6.3'
-  JMETER_HOME: '$(Pipeline.Workspace)\\apache-jmeter-$(JMETER_VERSION)\\bin'
+  JMETER_HOME: '$(Pipeline.Workspace)\\apache-jmeter-$(JMETER_VERSION)'
   TEST_SCRIPT: 'Jpetstore_Demo.jmx'
   RESULTS_FILE: 'results.jtl'
   REPORT_DIR: 'html-report'
 
 steps:
+  - task: PowerShell@2
+    displayName: 'Show Pipeline.Workspace Path'
+    inputs:
+      targetType: 'inline'
+      script: |
+        Write-Host "Pipeline.Workspace: $(Pipeline.Workspace)"
+        Write-Host "Build.SourcesDirectory: $(Build.SourcesDirectory)"
+
   - task: PowerShell@2
     displayName: 'Download Apache JMeter'
     inputs:
@@ -27,7 +35,9 @@ steps:
     inputs:
       targetType: 'inline'
       script: |
-        cd "$(JMETER_HOME)"
+        $env:JMETER_HOME = "$(JMETER_HOME)"
+        Write-Host "JMETER_HOME is set to: $env:JMETER_HOME"
+        cd "$env:JMETER_HOME\\bin"
         .\jmeter.bat -n -t "$(Build.SourcesDirectory)\\$(TEST_SCRIPT)" -l "$(Build.SourcesDirectory)\\$(RESULTS_FILE)" -e -o "$(Build.SourcesDirectory)\\$(REPORT_DIR)"
 
   - task: PublishBuildArtifacts@1
